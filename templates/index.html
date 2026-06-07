@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineSearch | Advanced Specialized Search Engine</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Background Glow Elements -->
+    <div class="glow-bg-1"></div>
+    <div class="glow-bg-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <i class="fa-solid fa-clapperboard logo-icon"></i>
+                <div class="brand-text">
+                    <h1>CineSearch</h1>
+                    <p class="subtitle">Specialized Academic Search Engine</p>
+                </div>
+            </div>
+            
+            <!-- Index Stats Dashboard -->
+            <div class="index-stats-card">
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-docs">-</span>
+                    <span class="stat-label">Documents</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-vocab">-</span>
+                    <span class="stat-label">Vocab Size</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-postings">-</span>
+                    <span class="stat-label">Postings</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="app-nav">
+            <button class="nav-tab active" id="tab-btn-search" onclick="switchTab('search')">
+                <i class="fa-solid fa-magnifying-glass"></i> Search Portal
+            </button>
+            <button class="nav-tab" id="tab-btn-explorer" onclick="switchTab('explorer')">
+                <i class="fa-solid fa-database"></i> Index Explorer
+            </button>
+        </nav>
+
+        <!-- Main View Area -->
+        <main class="app-main">
+            <!-- TAB 1: SEARCH PORTAL -->
+            <section id="view-search" class="tab-view active">
+                <div class="search-panel">
+                    <form id="search-form" onsubmit="performSearch(event)">
+                        <!-- Search Mode Toggle -->
+                        <div class="search-options">
+                            <label class="radio-label">
+                                <input type="radio" name="search-mode" value="ranked" checked onchange="updateSearchPlaceholder()">
+                                <span class="custom-radio"></span>
+                                <span class="mode-text">Ranked Vector Space (TF-IDF)</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="search-mode" value="boolean" onchange="updateSearchPlaceholder()">
+                                <span class="custom-radio"></span>
+                                <span class="mode-text">Boolean Logic (AND, OR, NOT)</span>
+                            </label>
+                        </div>
+
+                        <!-- Search Input Wrapper -->
+                        <div class="search-bar-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-bar-icon"></i>
+                            <input type="text" id="search-input" autocomplete="off" placeholder="Search movies, directors, actors...">
+                            <button type="button" class="clear-btn" id="clear-search-btn" onclick="clearSearch()" style="display: none;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <button type="submit" class="search-submit-btn">Search</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Query Status Bar -->
+                <div class="status-bar" id="search-status-bar" style="display: none;">
+                    <span id="status-results-text">Found 0 results in 0ms</span>
+                </div>
+
+                <!-- Results Grid -->
+                <div class="results-container" id="results-grid">
+                    <!-- Placeholder Welcome State -->
+                    <div class="welcome-state" id="search-welcome-state">
+                        <i class="fa-solid fa-film welcome-icon"></i>
+                        <h2>Explore Cinematic Knowledge</h2>
+                        <p>Search over 60+ movies using our custom-built inverted index. Try terms like <strong>space</strong>, <strong>dream</strong>, or boolean combinations like <strong>nolan AND space</strong>.</p>
+                        <div class="suggested-chips">
+                            <span class="chip-suggestion" onclick="fillAndSearch('nolan')">nolan</span>
+                            <span class="chip-suggestion" onclick="fillAndSearch('space AND NOT war')">space AND NOT war</span>
+                            <span class="chip-suggestion" onclick="fillAndSearch('romance OR music')">romance OR music</span>
+                            <span class="chip-suggestion" onclick="fillAndSearch('hitchcock')">hitchcock</span>
+                            <span class="chip-suggestion" onclick="fillAndSearch('superhero OR spider')">superhero OR spider</span>
+                        </div>
+                    </div>
+
+                    <!-- Loader -->
+                    <div class="loader-container" id="search-loader" style="display: none;">
+                        <div class="loader"></div>
+                        <p>Traversing postings list...</p>
+                    </div>
+
+                    <!-- Results List -->
+                    <div class="results-list" id="search-results-list"></div>
+                </div>
+            </section>
+
+            <!-- TAB 2: INDEX EXPLORER -->
+            <section id="view-explorer" class="tab-view">
+                <div class="explorer-intro">
+                    <h2>Inverted Index Postings Explorer</h2>
+                    <p>Enter any query term to inspect how it is indexed in the database. CineSearch preprocesses terms by tokenizing, stripping stopwords, applying custom stemming, and indexing term positions.</p>
+                </div>
+
+                <div class="explorer-search-bar">
+                    <div class="search-bar-wrapper">
+                        <i class="fa-solid fa-database search-bar-icon"></i>
+                        <input type="text" id="explorer-input" placeholder="Type a term to inspect (e.g. 'dream', 'murder', 'future')..." onkeypress="handleExplorerKeypress(event)">
+                        <button type="button" class="search-submit-btn" onclick="inspectTerm()">Inspect Term</button>
+                    </div>
+                </div>
+
+                <div class="explorer-results" id="explorer-results-container">
+                    <div class="welcome-state" id="explorer-welcome-state">
+                        <i class="fa-solid fa-magnifying-glass-chart welcome-icon"></i>
+                        <h2>Inspect Inverted Postings</h2>
+                        <p>Type a single word above to see its root stem and its exact occurrences (frequencies and word indices) in the index schema.</p>
+                    </div>
+
+                    <!-- Loader -->
+                    <div class="loader-container" id="explorer-loader" style="display: none;">
+                        <div class="loader"></div>
+                        <p>Retrieving node postings...</p>
+                    </div>
+
+                    <div id="explorer-data-view" style="display: none;">
+                        <div class="explorer-meta-summary">
+                            <div>Term Queried: <span class="highlight-tag" id="exp-queried-word">-</span></div>
+                            <div>Root Stem: <span class="highlight-tag" id="exp-stemmed-word">-</span></div>
+                            <div>Document Frequency (DF): <span class="highlight-tag" id="exp-df">-</span></div>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="postings-table">
+                                <thead>
+                                    <tr>
+                                        <th>Document ID</th>
+                                        <th>Movie Title</th>
+                                        <th>Term Frequency (TF)</th>
+                                        <th>Field Occurrences & Word Offsets</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="postings-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 CineSearch Engine.</p>
+        </footer>
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div class="modal-overlay" id="movie-modal" onclick="closeModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <button class="modal-close-btn" onclick="closeModalDirectly()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="modal-header">
+                <div class="modal-title-row">
+                    <h2 id="modal-title">Movie Title</h2>
+                    <span id="modal-year" class="modal-year-tag">2023</span>
+                </div>
+                <div class="modal-meta-row">
+                    <span class="modal-rating"><i class="fa-solid fa-star"></i> <span id="modal-rating-val">8.5</span>/10</span>
+                    <span id="modal-genres" class="modal-genres-list"></span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h3>Plot Outline</h3>
+                    <p id="modal-plot" class="modal-plot-text"></p>
+                </div>
+                <div class="modal-section-grid">
+                    <div class="modal-grid-item">
+                        <h4>Director</h4>
+                        <p id="modal-director">-</p>
+                    </div>
+                    <div class="modal-grid-item">
+                        <h4>Cast</h4>
+                        <p id="modal-cast">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
