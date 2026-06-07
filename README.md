@@ -31,7 +31,7 @@ It satisfies all core requirements of the Specialized Search Engine assignment a
    * Scans the document's plot description and extracts the sentence that contains the highest concentration of query terms.
    * Dynamically wraps matched terms (including stemmed equivalents) in HTML `<mark>` tags for visual highlighting.
 
-6. **Cinematic Web Interface (Bonus Section ⭐):**
+6. **Cinematic Web Interface:**
    * Premium, responsive dark-themed visual design with glassmorphic cards and smooth animations.
    * **Live Stats Board:** Displays index size metrics (Total Documents, Vocabulary Size, and Total Postings) dynamically fetched from the engine.
    * **Search Portal:** Toggleable modes between Ranked TF-IDF and Boolean Search with search suggestions, query metadata (execution time, document counts, cosine scores), and pop-up details modals.
